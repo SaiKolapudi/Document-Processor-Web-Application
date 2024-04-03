@@ -1,0 +1,8 @@
+00:00:05,000 --> 00:00:19,000
+Amelia: Our IT infrastructure needs an upgrade to support our growing needs. It's becoming a bottleneck.
+
+00:00:20,000 --> 00:00:34,000
+Jacob: We have to plan carefully to minimize downtime. A phased rollout could be a good approach.
+
+00:00:35,000 --> 00:00:45,000
+Mia: The long-term benefits will definitely outweigh the initial hurdles. We should proceed with the upgrade.

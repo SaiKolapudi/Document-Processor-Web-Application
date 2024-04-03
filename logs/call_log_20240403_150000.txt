@@ -1,0 +1,8 @@
+00:00:05,000 --> 00:00:20,000
+Olivia: We should focus on improving our customer support services. It's a critical pain point.
+
+00:00:21,000 --> 00:00:35,000
+Ethan: Agreed. Hiring additional support staff and training them extensively in our product range would be beneficial.
+
+00:00:36,000 --> 00:00:50,000
+Ava: Implementing chatbots can also help us manage common queries more efficiently.

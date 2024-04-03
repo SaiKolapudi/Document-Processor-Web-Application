@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Document Processor</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        body {
+            padding: 20px;
+        }
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .suggested-fact-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .suggested-fact-item span {
+            flex-grow: 1;
+        }
+        .suggested-fact-item button {
+            margin-left: 10px;
+        }
+        .fact-added {
+            color: green;
+        }
+        .fact-removed {
+            color: red;
+        }
+        .fact-modified {
+            color: blue;
+        }
+        .fact-added span,
+        .fact-removed span,
+        .fact-modified span {
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        $(document).ready(function() {
+            var question = "";
+
+            $("#document-form").submit(function(event) {
+                event.preventDefault();
+                var documentURLs = $("#document-urls").val().split("\n").filter(function(url) {
+                    return url.trim() !== "";
+                });
+                question = $("#question").val();
+                var autoApprove = $("#autoApprove").prop("checked");
+
+                var payload = {
+                    question: question,
+                    documents: documentURLs,
+                    autoApprove: autoApprove
+                };
+
+                $.ajax({
+                    url: "/submit_question_and_documents",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(payload),
+                    beforeSend: function() {
+                        $(".loading-spinner").show();
+                    },
+                    success: function(response) {
+                        $("#document-urls").val("");
+                        $("#autoApprove").prop("checked", false);
+                        getSuggestedFacts(payload);
+                    },
+                    error: function(xhr, status, error) {
+                        alert("Error submitting documents: " + error);
+                    }
+                });
+            });
+
+            function getSuggestedFacts(payload) {
+                $.ajax({
+                    url: "/get_suggested_facts",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(payload),
+                    success: function(response) {
+                        displaySuggestedFacts(response.suggestedFacts);
+                        $(".loading-spinner").hide();
+                    },
+                    error: function(xhr, status, error) {
+                        alert("Error retrieving suggested facts: " + error);
+                        $(".loading-spinner").hide();
+                    }
+                });
+            }
+
+            function displaySuggestedFacts(suggestedFacts) {
+                var suggestedFactList = $("#suggested-fact-list");
+                suggestedFactList.empty();
+                suggestedFacts.forEach(function(fact, index) {
+                    var factItem = $("<div>").addClass("suggested-fact-item");
+                    var factText = $("<span>").text(fact.fact);
+                    var actionButton = $("<button>").addClass("btn btn-sm").click(function() {
+                        updateFact(fact, index);
+                    });
+
+                    if (fact.type === "add") {
+                        actionButton.text("Add").addClass("btn-success");
+                    } else if (fact.type === "remove") {
+                        actionButton.text("Remove").addClass("btn-danger");
+                    } else if (fact.type === "change") {
+                        actionButton.text("Modify").addClass("btn-primary");
+                    }
+
+                    factItem.append(factText, actionButton);
+                    suggestedFactList.append(factItem);
+                });
+            }
+
+            function updateFact(fact, index) {
+                var factsToAdd = [];
+                var factsToRemove = [];
+                var factsToChange = [];
+
+                if (fact.type === "add") {
+                    factsToAdd.push(fact);
+                } else if (fact.type === "remove") {
+                    factsToRemove.push(fact);
+                } else if (fact.type === "change") {
+                    factsToChange.push(fact);
+                }
+
+                $.ajax({
+                    url: "/update_facts",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        factsToAdd: factsToAdd,
+                        factsToRemove: factsToRemove,
+                        factsToChange: factsToChange
+                    }),
+                    success: function(response) {
+                        var factItem = $("#suggested-fact-list .suggested-fact-item").eq(index);
+                        var actionButton = factItem.find("button");
+
+                        if (fact.type === "add") {
+                            actionButton.text("Added").removeClass("btn-success").addClass("btn-secondary").prop("disabled", true);
+                        } else if (fact.type === "remove") {
+                            actionButton.text("Removed").removeClass("btn-danger").addClass("btn-secondary").prop("disabled", true);
+                        } else if (fact.type === "change") {
+                            actionButton.text("Modified").removeClass("btn-primary").addClass("btn-secondary").prop("disabled", true);
+                        }
+
+                        displayFactsForQuestion();
+                    },
+                    error: function(xhr, status, error) {
+                        alert("Error updating fact: " + error);
+                    }
+                });
+            }
+
+            function displayFactsForQuestion() {
+                $.ajax({
+                    url: "/get_question_and_facts",
+                    type: "GET",
+                    success: function(response) {
+                        if (response.status === "done") {
+                            displayFacts(response.factsByDay, response.question);
+                        } else if (response.status === "processing") {
+                            setTimeout(displayFactsForQuestion, 2000);
+                        } else if (response.status === "no_facts") {
+                            var factList = $("#fact-list");
+                            factList.empty();
+                            var questionHeading = $("<h5>").text("Question: " + response.question);
+                            var noFactsMessage = $("<p>").text("No facts found for the given question.");
+                            factList.append(questionHeading, noFactsMessage);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        alert("Error retrieving facts: " + error);
+                    }
+                });
+            }
+
+            function displayFacts(factsByDay, question) {
+                var factList = $("#fact-list");
+                factList.empty();
+                var questionHeading = $("<h5>").text("Question: " + question);
+                factList.append(questionHeading);
+                var dates = Object.keys(factsByDay).sort();
+                var firstDate = dates[0];
+                var timeSlider = $("<input>").attr({
+                    type: "range",
+                    min: 0,
+                    max: dates.length - 1,
+                    value: 0,
+                    id: "time-slider",
+                    class: "form-control-range"
+                });
+                var sliderValue = $("<span>").attr("id", "slider-value").text(firstDate);
+                factList.append(timeSlider, sliderValue);
+                timeSlider.on("input", function() {
+                    var selectedDate = dates[$(this).val()];
+                    sliderValue.text(selectedDate);
+                    displayFactsForDate(selectedDate, factsByDay);
+                });
+                displayFactsForDate(firstDate, factsByDay);
+            }
+
+            function displayFactsForDate(date, factsByDay) {
+                var factList = $("#fact-list");
+                var facts = factsByDay[date];
+                var factItems = facts.map(function(fact) {
+                    var factClass = "";
+                    var factText = fact.fact || fact;
+                    if (fact.added) {
+                        factClass = "fact-added";
+                        factText = "<span>" + factText + "</span>";
+                    } else if (fact.removed) {
+                        factClass = "fact-removed";
+                        factText = "<span>" + factText + "</span>";
+                    } else if (fact.modified) {
+                        factClass = "fact-modified";
+                        return $("<li>").html("<span>" + fact.oldFact + "</span> -> <span>" + fact.newFact + "</span>").addClass(factClass);
+                    }
+                    return $("<li>").html(factText).addClass(factClass);
+                });
+                factList.find("ul").remove();
+                var factSubList = $("<ul>").append(factItems);
+                factList.append(factSubList);
+            }
+
+            $("#clear-question-answers").click(function() {
+                $.ajax({
+                    url: "/clear_question_and_answers",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ question: question }),
+                    success: function(response) {
+                        question = "";
+                        $("#question").val("");
+                        $("#suggested-fact-list").empty();
+                        $("#fact-list").empty();
+                    },
+                    error: function(xhr, status, error) {
+                        alert("Error clearing question and answers: " + error);
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Document Processor</h1>
+        <ul class="nav nav-tabs" id="nav-tab" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="nav-document-addition-tab" data-toggle="tab" href="#nav-document-addition" role="tab" aria-controls="nav-document-addition" aria-selected="true">Document Addition</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="nav-question-answer-tab" data-toggle="tab" href="#nav-question-answer" role="tab" aria-controls="nav-question-answer" aria-selected="false">Question and Answer</a>
+            </li>
+        </ul>
+        <div class="tab-content" id="nav-tabContent">
+            <div class="tab-pane fade show active" id="nav-document-addition" role="tabpanel" aria-labelledby="nav-document-addition-tab">
+                <div class="row justify-content-center mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4>Document Addition</h4>
+                            </div>
+                            <div class="card-body">
+                                <form id="document-form">
+                                    <div class="form-group">
+                                        <label for="question">Question:</label>
+                                        <input type="text" id="question" name="question" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="document-urls">Document URLs (one per line):</label>
+                                        <textarea id="document-urls" name="document-urls" class="form-control" rows="5" required></textarea>
+                                    </div>
+                                    <div class="form-group form-check">
+                                        <input type="checkbox" id="autoApprove" name="autoApprove" class="form-check-input">
+                                        <label for="autoApprove" class="form-check-label">Auto Approve</label>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Submit</button>
+                                </form>
+                                <div class="loading-spinner">
+                                    <div class="spinner-border" role="status">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row justify-content-center mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4>Suggested Facts</h4>
+                            </div>
+                            <div class="card-body">
+                                <div id="suggested-fact-list"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="nav-question-answer" role="tabpanel" aria-labelledby="nav-question-answer-tab">
+                <div class="row justify-content-center mt-4">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4>Question and Answer</h4>
+                            </div>
+                            <div class="card-body">
+                                <div id="fact-list"></div>
+                                <button id="clear-question-answers" class="btn btn-danger mt-3">Clear Question and Answers</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
