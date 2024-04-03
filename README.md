@@ -1,63 +1,44 @@
-# Document-Processor-Web-Application
-
+# Document Processor Web Application
 
 ## Overview
-```
+
 The Document Processor is a web application designed to extract and process information from call logs. Users can input a question and upload call log documents, from which the application will extract relevant facts. It offers features like time navigation, auto-approval of facts, and handling contradictions in the extracted information.
-```
 
 ## Features
-```
-- **Question and Answer Screen:** Users can view the extracted facts related to their question. The screen includes a time navigation slider to explore the extracted facts over different days. Changes in facts (added, removed, or modified) are highlighted.
-- **Document Addition Screen:** This screen allows for the addition of new call logs via URLs. Users can also set a question for the application to answer based on the uploaded documents.
-- **Automatic Fact Processing:** Upon document upload, the application processes the content to extract relevant facts. It handles contradictions and suggests facts to be added, removed, or modified.
-- **API Endpoints:** Provides REST API endpoints for submitting questions and documents (`POST /submit_question_and_documents`) and for retrieving the processed facts (`GET /get_question_and_facts`).
-```
+
+- **Question and Answer Screen:** Displays a question and its corresponding answers, extracted from the documents, with a time navigation feature.
+- **Document Addition Screen:** Allows adding new call logs and setting a question for processing.
+- **Automatic Fact Processing:** Processes uploaded documents to extract relevant facts and handles contradictions.
+- **API Endpoints:** Offers REST API for submitting questions/documents and retrieving processed facts.
 
 ## Technologies Used
-```
-- **Flask:** A Python web framework used for building the web application.
-- **PyMongo:** A Python tool for interacting with MongoDB, used for data storage and retrieval.
-- **OpenAI's GPT:** Utilized for processing documents and extracting relevant facts based on the question provided.
-```
+
+- Flask (Python web framework)
+- PyMongo (MongoDB interaction tool)
+- OpenAI's GPT (for document processing)
 
 ## Setup and Installation
-```
-1. Ensure Python and MongoDB are installed on your system.
-2. Install required Python packages using `pip install -r requirements.txt`.
-3. Run the application with `python app.py`.
-```
+
+1. Install Python and MongoDB.
+2. Use `pip install -r requirements.txt` to install Python packages.
+3. Run the application: `python app.py`.
 
 ## Usage
-```
-1. Navigate to the Document Addition Screen to add call log documents and set the question.
-2. Submit the documents. If auto-approve is checked, all suggestions are automatically approved.
-3. Switch to the Question and Answer Screen to view the extracted facts. Use the time slider to navigate through different days.
-```
+
+1. Navigate to the Document Addition Screen to add call logs and set the question.
+2. Submit the documents for processing.
+3. View the extracted facts on the Question and Answer Screen.
 
 ## API Guide
-```
-- **Submit Question and Documents:**
-  - Endpoint: `POST /submit_question_and_documents`
-  - Payload:
-    ```json
-    {
-      "question": "Your question here",
-      "documents": ["URL1", "URL2"],
-      "autoApprove": true
-    }
-    ```
-- **Get Question and Facts:**
-  - Endpoint: `GET /get_question_and_facts`
-```
+
+- `POST /submit_question_and_documents`: Submits a question and document URLs for processing.
+- `GET /get_question_and_facts`: Retrieves processed facts related to the submitted question.
 
 ## Development Notes
-```
-- Bring your own LLM API key for document processing.
-- The application optimizes for accuracy and handles data consistency across different time points.
-```
+
+- An LLM API key is required for document processing.
+- The application prioritizes accuracy and handles temporal data consistency.
 
 ## Contributing
-```
-Contributions to the project are welcome. Ensure that any pull requests or issues follow the project's standards and provide sufficient information.
-```
+
+Contributors are encouraged to submit pull requests or issues following project standards.
