@@ -4,8 +4,11 @@
 
 The Document Processor is a web application designed to extract and process information from call logs. Users can input a question and upload call log documents, from which the application will extract relevant facts. It offers features like time navigation, auto-approval of facts, and handling contradictions in the extracted information.
 
-## Demo
+## Demo Screenshot 1
 ![Demo Image](Image/Document%20Processor_1.png)
+
+## Demo Screenshot 2
+![Demo Image](Image/Document%20Processor_2.png)
 
 
 ## Features
